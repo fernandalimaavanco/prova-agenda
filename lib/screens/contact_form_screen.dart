@@ -56,7 +56,7 @@ class _ContactFormScreenState extends State<ContactFormScreen> {
         widget.onAdd!(contact);
         _showSuccessMessage('Contato salvo com sucesso!');
       } else if (widget.onEdit != null && widget.index != null) {
-        widget.onEdit!(widget.index!, contact);
+        widget.onEdit!(widget.contact!.id!, contact);
         _showSuccessMessage('Contato alterado com sucesso!');
       }
       Navigator.of(context).pop();

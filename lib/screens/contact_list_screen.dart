@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../models/contact.dart';
+import '../database/database_helper.dart';
 import 'contact_form_screen.dart';
 
 class ContactListScreen extends StatefulWidget {
@@ -9,17 +10,34 @@ class ContactListScreen extends StatefulWidget {
 
 class _ContactListScreenState extends State<ContactListScreen> {
   List<Contact> contacts = [];
+  final DatabaseHelper _dbHelper = DatabaseHelper();
 
-  void _addContact(Contact contact) {
+  @override
+  void initState() {
+    super.initState();
+    _initializeDatabase();
+  }
+
+  Future<void> _initializeDatabase() async {
+    await _dbHelper.database;
+    _loadContacts();
+  }
+
+  Future<void> _loadContacts() async {
+    final loadedContacts = await _dbHelper.getContacts();
     setState(() {
-      contacts.add(contact);
+      contacts = loadedContacts;
     });
   }
 
-  void _editContact(int index, Contact contact) {
-    setState(() {
-      contacts[index] = contact;
-    });
+  void _addContact(Contact contact) async {
+    await _dbHelper.insertContact(contact);
+    _loadContacts();
+  }
+
+  void _editContact(int id, Contact contact) async {
+    await _dbHelper.updateContact(id, contact);
+    _loadContacts();
   }
 
   void _showDeleteMessage() {
@@ -35,7 +53,7 @@ class _ContactListScreenState extends State<ContactListScreen> {
     ScaffoldMessenger.of(context).showSnackBar(snackBar);
   }
 
-  void _deleteContact(int index) {
+  void _prepareDeleteContact(int id) {
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
@@ -57,17 +75,20 @@ class _ContactListScreenState extends State<ContactListScreen> {
           ),
           TextButton(
             onPressed: () {
-              setState(() {
-                contacts.removeAt(index);
-              });
+              _deleteContact(id);
               Navigator.of(context).pop();
-              _showDeleteMessage();
             },
             child: Text('Deletar', style: TextStyle(color: Colors.red)),
           ),
         ],
       ),
     );
+  }
+
+  void _deleteContact(int id) async {
+    await _dbHelper.deleteContact(id);
+    _loadContacts();
+    _showDeleteMessage();
   }
 
   @override
@@ -91,10 +112,8 @@ class _ContactListScreenState extends State<ContactListScreen> {
                   Icon(Icons.sentiment_dissatisfied,
                       size: 50, color: Colors.grey),
                   SizedBox(height: 16),
-                  Text(
-                    'Você ainda não possui contatos!',
-                    style: TextStyle(fontSize: 18, color: Colors.grey),
-                  ),
+                  Text('Você ainda não possui contatos!',
+                      style: TextStyle(fontSize: 18, color: Colors.grey)),
                 ],
               ),
             )
@@ -134,7 +153,8 @@ class _ContactListScreenState extends State<ContactListScreen> {
                         IconButton(
                           icon: Icon(Icons.delete),
                           color: Colors.red,
-                          onPressed: () => _deleteContact(index),
+                          onPressed: () =>
+                              _prepareDeleteContact(contacts[index].id!),
                         ),
                       ],
                     ),
