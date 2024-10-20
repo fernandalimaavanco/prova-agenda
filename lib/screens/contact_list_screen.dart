@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import '../models/contact.dart';
 import '../database/database_helper.dart';
 import 'contact_form_screen.dart';
+import 'login_screen.dart';
 
 class ContactListScreen extends StatefulWidget {
   @override
@@ -15,7 +17,20 @@ class _ContactListScreenState extends State<ContactListScreen> {
   @override
   void initState() {
     super.initState();
+    _checkLoginStatus();
     _initializeDatabase();
+  }
+
+  Future<void> _checkLoginStatus() async {
+    SharedPreferences prefs = await SharedPreferences.getInstance();
+    String? token = prefs.getString('user_token');
+
+    if (token == null) {
+      Navigator.pushReplacement(
+        context,
+        MaterialPageRoute(builder: (context) => LoginScreen()),
+      );
+    }
   }
 
   Future<void> _initializeDatabase() async {
@@ -91,6 +106,44 @@ class _ContactListScreenState extends State<ContactListScreen> {
     _showDeleteMessage();
   }
 
+  Future<void> _confirmLogout() async {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        backgroundColor: Color.fromARGB(255, 231, 211, 239),
+        title: Row(
+          children: [
+            Icon(Icons.logout, color: Colors.red),
+            SizedBox(width: 8),
+            Text('Confirmar Logout'),
+          ],
+        ),
+        content: Text('Você tem certeza que deseja sair?'),
+        actions: [
+          TextButton(
+            onPressed: () {
+              Navigator.of(context).pop();
+            },
+            child: Text('Cancelar'),
+          ),
+          TextButton(
+            onPressed: () async {
+              SharedPreferences prefs = await SharedPreferences.getInstance();
+              await prefs.remove('user_token');
+              Navigator.of(context).pop();
+              Navigator.pushReplacement(
+                context,
+                MaterialPageRoute(builder: (context) => LoginScreen()),
+              );
+            },
+            child: Text('Sair', style: TextStyle(color: Colors.red)),
+          ),
+        ],
+      ),
+    );
+  }
+
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -103,6 +156,12 @@ class _ContactListScreenState extends State<ContactListScreen> {
             Text('Lista de Contatos', style: TextStyle(color: Colors.white)),
           ],
         ),
+        actions: [
+          IconButton(
+            icon: Icon(Icons.logout, color: Colors.white),
+            onPressed: _confirmLogout,
+          ),
+        ],
       ),
       body: contacts.isEmpty
           ? Center(

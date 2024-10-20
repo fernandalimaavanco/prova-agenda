@@ -23,8 +23,9 @@ class DatabaseHelper {
     String path = join(await getDatabasesPath(), 'contacts.db');
     return await openDatabase(
       path,
-      version: 1,
+      version: 2,
       onCreate: _onCreate,
+      onUpgrade: _onUpgrade,
     );
   }
 
@@ -37,6 +38,26 @@ class DatabaseHelper {
         email TEXT
       )
     ''');
+
+    await db.execute('''
+      CREATE TABLE login (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        username TEXT,
+        password TEXT
+      )
+    ''');
+  }
+
+  Future<void> _onUpgrade(Database db, int oldVersion, int newVersion) async {
+    if (oldVersion < 2) {
+      await db.execute('''
+        CREATE TABLE login (
+          id INTEGER PRIMARY KEY AUTOINCREMENT,
+          username TEXT,
+          password TEXT
+        )
+      ''');
+    }
   }
 
   Future<List<Contact>> getContacts() async {
@@ -87,5 +108,39 @@ class DatabaseHelper {
       where: 'id = ?',
       whereArgs: [id],
     );
+  }
+
+  Future<void> insertUser(String username, String password) async {
+    final db = await database;
+    await db.insert(
+      'login',
+      {'username': username, 'password': password},
+      conflictAlgorithm: ConflictAlgorithm.replace,
+    );
+  }
+
+  Future<Map<String, dynamic>?> getUser(
+      String username, String password) async {
+    final db = await database;
+    final List<Map<String, dynamic>> result = await db.query(
+      'login',
+      where: 'username = ? AND password = ?',
+      whereArgs: [username, password],
+    );
+    if (result.isNotEmpty) {
+      return result.first;
+    } else {
+      return null;
+    }
+  }
+
+  Future<bool> isUserExist(String username) async {
+    final db = await database;
+    final List<Map<String, dynamic>> result = await db.query(
+      'login',
+      where: 'username = ?',
+      whereArgs: [username],
+    );
+    return result.isNotEmpty;
   }
 }
