@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:shared_preferences/shared_preferences.dart';
+import 'services/session_manager.dart';
 import 'screens/contact_list_screen.dart';
 import 'screens/login_screen.dart';
 
@@ -13,8 +13,7 @@ class MyApp extends StatelessWidget {
     return MaterialApp(
       title: 'Agenda de Contatos',
       theme: ThemeData(primarySwatch: Colors.purple),
-      home:
-          SplashScreen(),
+      home: SplashScreen(),
     );
   }
 }
@@ -25,6 +24,8 @@ class SplashScreen extends StatefulWidget {
 }
 
 class _SplashScreenState extends State<SplashScreen> {
+  final SessionManager _sessionManager = SessionManager();
+
   @override
   void initState() {
     super.initState();
@@ -32,8 +33,7 @@ class _SplashScreenState extends State<SplashScreen> {
   }
 
   Future<void> _checkLoginStatus() async {
-    SharedPreferences prefs = await SharedPreferences.getInstance();
-    String? token = prefs.getString('user_token');
+    String? token = await _sessionManager.getToken();
 
     if (token == null) {
       Navigator.pushReplacement(
@@ -52,8 +52,7 @@ class _SplashScreenState extends State<SplashScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       body: Center(
-        child:
-            CircularProgressIndicator(),
+        child: CircularProgressIndicator(),
       ),
     );
   }
